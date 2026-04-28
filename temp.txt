@@ -1,0 +1,61 @@
+export HF_ENDPOINT=https://hf-mirror.com
+
+python moe-qwen.py \
+  --model_name="./Qwen1.5-MoE-A2.7B-Chat" \
+  --task="winogrande" \
+  --train_batch_size=8 \
+  --eval_batch_size=8 \
+  --epsilon=0.01 \
+  --ot_strength=5.0 \
+  --lr=1e-5 \
+  --result_path="results/results_qwen_test.txt" \
+  --output_path="results/qwen/test"
+
+accelerate launch --config_file static/finetune_config.yaml \
+  --main_process_port 0 moe-qwen.py \
+  --model_name="./Qwen1.5-MoE-A2.7B-Chat" \
+  --task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" \
+  --train_batch_size=8 \
+  --eval_batch_size=8 \
+  --epsilon=0.01 \
+  --ot_strength=5.0 \
+  --lr=1e-5 \
+  --result_path="results/results_qwen_test.txt" \
+  --output_path="results/qwen/merge-45e/test"
+
+lm_eval \
+    --model hf \
+    --model_args pretrained=./Qwen1.5-MoE-A2.7B-Chat,dtype=bfloat16 \
+    --tasks winogrande \
+    --device cuda:0 \
+    --batch_size 8
+
+nohup bash scripts/run_baseline.sh > logs/run_baseline.sh.log 2>&1 &
+nohup bash train.sh > logs/train.log 2>&1 &
+train_ssa_new
+
+
+python hera_qwen.py --model_name="./Qwen1.5-MoE-A2.7B-Chat" --task="winogrande" --eval_batch_size=8 --lr=1e-5 --target_layer=0 --result_path="results/results_hera_test.txt"
+
+
+
+accelerate launch --config_file static/finetune_config.yaml \
+  --main_process_port 0 moe-qwen.py \
+  --model_name="./Qwen1.5-MoE-A2.7B-Chat" \
+  --task="boolq" \
+  --train_batch_size=8 \
+  --eval_batch_size=8 \
+  --epsilon=0.01 \
+  --ot_strength=5.0 \
+  --lr=1e-5 \
+  --result_path="results/results_qwen_test.txt" \
+  --output_path="results/qwen/merge-45e/test" |& tee results/log_45e_test
+
+
+nohup bash run2.sh > logs/run2.log 2>&1 &
+nohup bash run1.sh > logs/run1.log 2>&1 &
+nohup bash run3.sh > logs/run3.log 2>&1 &
+
+
+
+nohup python download.py > logs/download.log 2>&1 &

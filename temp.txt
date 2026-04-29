@@ -32,6 +32,10 @@ lm_eval \
 
 nohup bash scripts/run_baseline.sh > logs/run_baseline.sh.log 2>&1 &
 nohup bash train.sh > logs/train.log 2>&1 &
+
+
+nohup bash scripts/run_tent_reset.sh > logs/run_tent_reset.log 2>&1 &
+nohup bash scripts/run_tent.sh > logs/run_tent.log 2>&1 &
 train_ssa_new
 
 

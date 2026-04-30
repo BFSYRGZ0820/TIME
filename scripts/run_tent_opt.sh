@@ -1,7 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# 自动选择最空闲的 GPU（可用 GPU_ID 环境变量覆盖）
 pick_gpu() {
 	if command -v nvidia-smi >/dev/null 2>&1; then
 		nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits \
@@ -10,6 +9,7 @@ pick_gpu() {
 		echo 0
 	fi
 }
+
 GPU_ID="${GPU_ID:-$(pick_gpu)}"
 export CUDA_VISIBLE_DEVICES="$GPU_ID"
 echo "Using CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
@@ -17,21 +17,21 @@ export HF_ENDPOINT=https://hf-mirror.com
 export HF_DATASETS_OFFLINE=1
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-accelerate launch --config_file static/finetune_config.yaml --main_process_port 0 tent_moe.py \
+accelerate launch --config_file static/finetune_config.yaml --main_process_port 0 tent_moe_opt.py \
   --model_name="./models/Qwen1.5-MoE-A2.7B-Chat" \
   --task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" \
   --eval_batch_size=8 --lora_r=16 --lora_alpha=16 --gradient_checkpointing=True \
   --lr=1e-5 --reg_lambda=0.0 --time_random_reset=False --time_reset_prob=0.01 \
   --result_path="results/tent_opt_results_qwen_chat.txt"
 
-accelerate launch --config_file static/finetune_config.yaml --main_process_port 0 tent_moe.py \
+accelerate launch --config_file static/finetune_config.yaml --main_process_port 0 tent_moe_opt.py \
   --model_name="./models/Qwen1.5-MoE-A2.7B" \
   --task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" \
   --eval_batch_size=8 --lora_r=16 --lora_alpha=16 --gradient_checkpointing=True \
   --lr=1e-5 --reg_lambda=0.0 --time_random_reset=False --time_reset_prob=0.01 \
   --result_path="results/tent_opt_results_qwen.txt"
 
-accelerate launch --config_file static/finetune_config.yaml --main_process_port 0 tent_moe.py \
+accelerate launch --config_file static/finetune_config.yaml --main_process_port 0 tent_moe_opt.py \
   --model_name="./models/DeepSeek-V2-Lite" \
   --task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" \
   --eval_batch_size=4 --lora_r=16 --lora_alpha=16 --gradient_checkpointing=True \
@@ -40,4 +40,4 @@ accelerate launch --config_file static/finetune_config.yaml --main_process_port 
 
 echo "All experiments completed!"
 
-python ../send_email.py  --body "<p>tent_moe</p>"
+python ../send_email.py  --body "<p>tent_moe_opt</p>"

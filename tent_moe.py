@@ -174,7 +174,11 @@ def continual_test_time_adaptation_tent(args, model, tokenizer, device=None):
             start_time = time.time()
             model.train()
 
-            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+            outputs = model(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                use_cache=False,
+            )
             probs = torch.softmax(outputs.logits, dim=-1)
             entropy = -torch.sum(probs * torch.log(probs + 1e-12), dim=-1)
             loss_entropy = torch.sum(entropy * attention_mask.float()) / (

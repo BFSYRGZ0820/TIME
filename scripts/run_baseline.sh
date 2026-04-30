@@ -16,9 +16,24 @@ echo "Using CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 export HF_ENDPOINT=https://hf-mirror.com
 export HF_DATASETS_OFFLINE=1
 
-python baseline.py --model_name "./models/Qwen1.5-MoE-A2.7B-Chat" --task "winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" --result_path "results/baseline_qwen_chat.txt"
-python baseline.py --model_name "./models/Qwen1.5-MoE-A2.7B" --task "winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" --result_path "results/baseline_qwen.txt"
-python baseline.py --model_name "./models/DeepSeek-V2-Lite" --task "winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" --result_path "results/baseline_deepseek.txt" --eval_batch_size 4
+accelerate launch --config_file static/evaluation_config.yaml baseline.py \
+  --model_name="./models/Qwen1.5-MoE-A2.7B-Chat" \
+  --task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" \
+  --eval_batch_size=8 \
+  --result_path="results/baseline_qwen_chat.txt"
+
+accelerate launch --config_file static/evaluation_config.yaml baseline.py \
+  --model_name="./models/Qwen1.5-MoE-A2.7B" \
+  --task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" \
+  --eval_batch_size=8 \
+  --result_path="results/baseline_qwen.txt"
+
+accelerate launch --config_file static/evaluation_config.yaml baseline.py \
+  --model_name="./models/DeepSeek-V2-Lite" \
+  --task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" \
+  --eval_batch_size=4 \
+  --result_path="results/baseline_deepseek.txt"
+
 echo "All experiments completed!"
 
 python ../send_email.py  --body "<p>baseline</p>"

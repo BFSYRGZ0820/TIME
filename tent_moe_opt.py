@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Optional
 
 import torch
+from accelerate import Accelerator
 from fire import Fire
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from lm_eval.evaluator import simple_evaluate
@@ -36,10 +37,7 @@ def get_main_metric(task, task_result):
 
 
 def infer_default_eval_batch_size(model_name: str) -> int:
-    model_name_lower = model_name.lower()
-    if "deepseek" in model_name_lower:
-        return 4
-    return 8
+    return 4 if "deepseek" in model_name.lower() else 8
 
 
 def collect_trainable_initial_params(model):
@@ -48,29 +46,6 @@ def collect_trainable_initial_params(model):
         for name, param in model.named_parameters()
         if param.requires_grad
     }
-
-
-def is_model_sharded(model) -> bool:
-    device_map = getattr(model, "hf_device_map", None)
-    return isinstance(device_map, dict) and len(device_map) > 0
-
-
-def get_model_input_device(model) -> torch.device:
-    device_map = getattr(model, "hf_device_map", None)
-    if isinstance(device_map, dict):
-        for target in device_map.values():
-            if isinstance(target, str):
-                if target.startswith("cuda"):
-                    return torch.device(target)
-                if target == "cpu":
-                    continue
-            elif isinstance(target, int):
-                return torch.device(f"cuda:{target}")
-
-    for param in model.parameters():
-        return param.device
-
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class Args:
@@ -86,7 +61,7 @@ class Args:
         reg_lambda: Optional[float] = 0.0,
         time_random_reset: Optional[bool] = False,
         time_reset_prob: Optional[float] = 0.01,
-        gradient_checkpointing: Optional[bool] = False,
+        gradient_checkpointing: Optional[bool] = True,
     ):
         self.task = task
         self.model_name = model_name
@@ -105,17 +80,10 @@ class Args:
         self.gradient_checkpointing = gradient_checkpointing
 
 
-def continual_test_time_adaptation_tent(args, model, tokenizer):
+def continual_test_time_adaptation_tent(args, model, tokenizer, optimizer, accelerator):
     model.eval()
     batch_size = args.eval_batch_size
-    input_device = get_model_input_device(model)
-
-    lm_model = HFLM(
-        pretrained=model,
-        tokenizer=tokenizer,
-        batch_size=batch_size,
-        device_map="auto" if is_model_sharded(model) else None,
-    )
+    all_task_results = {}
 
     trainable_initial = collect_trainable_initial_params(model)
     if len(trainable_initial) == 0:
@@ -124,20 +92,15 @@ def continual_test_time_adaptation_tent(args, model, tokenizer):
             "Please check the layer-selection diagnostics printed by module/moe_lora.py."
         )
 
-    optimizer = torch.optim.AdamW(
-        [param for param in model.parameters() if param.requires_grad],
-        lr=args.lr,
-    )
-
     if isinstance(args.task, str):
         task_list = [task.strip() for task in args.task.split(",") if task.strip()]
     else:
-        task_list = args.task
-
-    all_task_results = {}
+        task_list = list(args.task)
 
     for task_name in task_list:
-        print(f"\n[TENT-MULTI] Start task: {task_name}")
+        if accelerator.is_main_process:
+            print(f"\n[TENT-OPT] Start task: {task_name}")
+
         task_dict = get_task_dict([task_name])
         task = task_dict[task_name]
         docs = list(task.validation_docs())
@@ -152,6 +115,14 @@ def continual_test_time_adaptation_tent(args, model, tokenizer):
             batch_indices = list(range(i, min(i + batch_size, n_examples)))
             samples_dict = {task_name: batch_indices}
 
+            eval_model = accelerator.unwrap_model(model)
+            lm_model = HFLM(
+                pretrained=eval_model,
+                tokenizer=tokenizer,
+                batch_size=batch_size,
+                device=str(accelerator.device),
+            )
+
             with torch.no_grad():
                 pre_results = simple_evaluate(
                     model=lm_model,
@@ -162,9 +133,11 @@ def continual_test_time_adaptation_tent(args, model, tokenizer):
                     random_seed=0,
                     torch_random_seed=0,
                 )
+
             pre_task_result = pre_results.get("results", {}).get(task_name)
             if pre_task_result is None:
-                print(f"[TENT-MULTI][Warning] task {task_name} not in pre_results, skipping batch")
+                if accelerator.is_main_process:
+                    print(f"[TENT-OPT][Warning] task {task_name} not in pre_results, skipping batch")
                 continue
 
             pre_acc, _ = get_main_metric(task, pre_task_result)
@@ -180,9 +153,9 @@ def continual_test_time_adaptation_tent(args, model, tokenizer):
             batch_contexts = construct_context(
                 requests_list=requests_list,
                 tokenizer=tokenizer,
-                model=model,
+                model=eval_model,
                 task_family=task_family,
-                device=input_device,
+                device=accelerator.device,
             )
 
             encoded = tokenizer(
@@ -191,8 +164,8 @@ def continual_test_time_adaptation_tent(args, model, tokenizer):
                 padding=True,
                 truncation=True,
             )
-            input_ids = encoded["input_ids"].to(input_device)
-            attention_mask = encoded["attention_mask"].to(input_device)
+            input_ids = encoded["input_ids"].to(accelerator.device)
+            attention_mask = encoded["attention_mask"].to(accelerator.device)
 
             start_time = time.time()
             model.train()
@@ -222,11 +195,11 @@ def continual_test_time_adaptation_tent(args, model, tokenizer):
             loss = loss_entropy + args.reg_lambda * reg_loss
 
             optimizer.zero_grad()
-            loss.backward()
+            accelerator.backward(loss)
             optimizer.step()
 
             if torch.cuda.is_available():
-                memory_list.append(torch.cuda.memory_allocated(input_device) / 1024 ** 3)
+                memory_list.append(torch.cuda.memory_allocated(accelerator.device) / 1024 ** 3)
             time_list.append((time.time() - start_time) / max(input_ids.size(0), 1))
 
             del outputs, probs, entropy, loss, loss_entropy, reg_loss
@@ -235,7 +208,7 @@ def continual_test_time_adaptation_tent(args, model, tokenizer):
             model.eval()
 
         if torch.cuda.is_available():
-            torch.cuda.synchronize()
+            torch.cuda.synchronize(accelerator.device)
             torch.cuda.empty_cache()
 
         summary = {
@@ -244,26 +217,32 @@ def continual_test_time_adaptation_tent(args, model, tokenizer):
             "cuda_memory_gb": sum(memory_list) / len(memory_list) if memory_list else 0.0,
             "time_per_sample": sum(time_list) / len(time_list) if time_list else 0.0,
         }
-        print(f"[TENT-MULTI] Task {task_name} summary: {summary}")
+        if accelerator.is_main_process:
+            print(f"[TENT-OPT] Task {task_name} summary: {summary}")
         all_task_results[task_name] = summary
 
     return all_task_results
 
 
-def run_tent_mult(
+def run_tent_opt(
     task: str,
     model_name: Optional[str] = "./Qwen1.5-MoE-A2.7B-Chat",
     eval_batch_size: Optional[int] = None,
-    result_path: Optional[str] = "results/tent_mult_results.txt",
+    result_path: Optional[str] = "results/tent_opt_results.txt",
     lr: Optional[float] = 1e-5,
     lora_r: Optional[int] = 16,
     lora_alpha: Optional[int] = 16,
     reg_lambda: Optional[float] = 0.0,
     time_random_reset: Optional[bool] = False,
     time_reset_prob: Optional[float] = 0.01,
-    gradient_checkpointing: Optional[bool] = False,
+    gradient_checkpointing: Optional[bool] = True,
 ):
     torch.manual_seed(0)
+    accelerator = Accelerator()
+    if accelerator.state.deepspeed_plugin is not None:
+        accelerator.state.deepspeed_plugin.deepspeed_config[
+            "train_micro_batch_size_per_gpu"
+        ] = int(eval_batch_size) if eval_batch_size is not None else infer_default_eval_batch_size(model_name)
 
     args = Args(
         task=task,
@@ -280,7 +259,6 @@ def run_tent_mult(
     )
 
     start_dt = datetime.now()
-
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
 
@@ -299,7 +277,6 @@ def run_tent_mult(
         local_files_only=True,
         trust_remote_code=True,
         torch_dtype=torch.bfloat16,
-        device_map="auto",
     )
     if hasattr(model, "config") and model.config is not None:
         model.config.use_cache = False
@@ -312,33 +289,37 @@ def run_tent_mult(
 
     if args.gradient_checkpointing:
         model.gradient_checkpointing_enable()
-        print("[TENT-MULTI] Gradient checkpointing enabled.")
 
     model = inject_lora_into_moe(model, r=args.lora_r, alpha=args.lora_alpha)
     freeze_non_lora_params(model)
 
-    sharded = is_model_sharded(model)
-    input_device = get_model_input_device(model)
+    optimizer = torch.optim.AdamW(
+        [param for param in model.parameters() if param.requires_grad],
+        lr=args.lr,
+    )
+    model, optimizer = accelerator.prepare(model, optimizer)
 
-    print("========== Starting Multi-GPU Tent Evaluation ==========")
-    print(f"Start Time:   {start_dt.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Model Path:   {args.model_name}")
-    print(f"Task:         {task}")
-    print(f"Batch Size:   {args.eval_batch_size}")
-    print(f"LR:           {args.lr}")
-    print(f"LoRA (r/a):   {args.lora_r}/{args.lora_alpha}")
-    print(f"Reg Lambda:   {args.reg_lambda}")
-    print(f"Rand Reset:   {args.time_random_reset}")
-    print(f"Reset Prob:   {args.time_reset_prob}")
-    print(f"Sharded:      {sharded}")
-    print(f"Input Device: {input_device}")
-    print("=======================================================")
+    if accelerator.is_main_process:
+        print("========== Starting Tent OPT Evaluation ==========")
+        print(f"Start Time:   {start_dt.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Model Path:   {args.model_name}")
+        print(f"Task:         {task}")
+        print(f"Batch Size:   {args.eval_batch_size}")
+        print(f"LR:           {args.lr}")
+        print(f"LoRA (r/a):   {args.lora_r}/{args.lora_alpha}")
+        print(f"Reg Lambda:   {args.reg_lambda}")
+        print(f"Rand Reset:   {args.time_random_reset}")
+        print(f"Reset Prob:   {args.time_reset_prob}")
+        print(f"Grad Ckpt:    {args.gradient_checkpointing}")
+        print(f"Device:       {accelerator.device}")
+        print("=================================================")
 
     start_ts = time.time()
-    results = continual_test_time_adaptation_tent(args, model, tokenizer)
+    results = continual_test_time_adaptation_tent(args, model, tokenizer, optimizer, accelerator)
     total_seconds = time.time() - start_ts
     end_dt = datetime.now()
 
+    accelerator.wait_for_everyone()
     if torch.cuda.is_available():
         peak_allocated_gb = torch.cuda.max_memory_allocated() / (1024 ** 3)
         peak_reserved_gb = torch.cuda.max_memory_reserved() / (1024 ** 3)
@@ -346,38 +327,38 @@ def run_tent_mult(
         peak_allocated_gb = 0.0
         peak_reserved_gb = 0.0
 
-    print(
-        f"[TENT-MULTI] Results: {results} | Time: {total_seconds:.2f} seconds | "
-        f"Peak Alloc: {peak_allocated_gb:.2f} GB | Peak Reserved: {peak_reserved_gb:.2f} GB"
-    )
+    if accelerator.is_main_process:
+        print(
+            f"[TENT-OPT] Results: {results} | Time: {total_seconds:.2f} seconds | "
+            f"Peak Alloc: {peak_allocated_gb:.2f} GB | Peak Reserved: {peak_reserved_gb:.2f} GB"
+        )
 
-    if args.result_path is not None:
-        result_dir = os.path.dirname(args.result_path)
-        if result_dir:
-            os.makedirs(result_dir, exist_ok=True)
-        with open(args.result_path, "w", encoding="utf-8") as f:
-            f.write("Multi-GPU Tent Evaluation Results\n")
-            f.write("=" * 50 + "\n")
-            f.write(f"Start Time: {start_dt.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"End Time:   {end_dt.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"Total Time (s): {total_seconds:.2f}\n")
-            f.write(f"Peak GPU Memory Allocated (GB): {peak_allocated_gb:.2f}\n")
-            f.write(f"Peak GPU Memory Reserved (GB):  {peak_reserved_gb:.2f}\n")
-            f.write(f"Model Path: {args.model_name}\n")
-            f.write(f"Tasks: {task}\n")
-            f.write(f"Eval Batch Size: {args.eval_batch_size}\n")
-            f.write(f"LR: {args.lr}\n")
-            f.write(f"LoRA r: {args.lora_r}\n")
-            f.write(f"LoRA alpha: {args.lora_alpha}\n")
-            f.write(f"Reg Lambda: {args.reg_lambda}\n")
-            f.write(f"Random Reset: {args.time_random_reset}\n")
-            f.write(f"Reset Prob: {args.time_reset_prob}\n")
-            f.write(f"Sharded: {sharded}\n")
-            f.write(f"Input Device: {input_device}\n")
-            f.write("=" * 50 + "\n")
-            for task_name, summary in results.items():
-                f.write(f"{task_name}: {summary}\n")
+        if args.result_path is not None:
+            result_dir = os.path.dirname(args.result_path)
+            if result_dir:
+                os.makedirs(result_dir, exist_ok=True)
+            with open(args.result_path, "w", encoding="utf-8") as f:
+                f.write("Tent OPT Evaluation Results\n")
+                f.write("=" * 50 + "\n")
+                f.write(f"Start Time: {start_dt.strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"End Time:   {end_dt.strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"Total Time (s): {total_seconds:.2f}\n")
+                f.write(f"Peak GPU Memory Allocated (GB): {peak_allocated_gb:.2f}\n")
+                f.write(f"Peak GPU Memory Reserved (GB):  {peak_reserved_gb:.2f}\n")
+                f.write(f"Model Path: {args.model_name}\n")
+                f.write(f"Tasks: {task}\n")
+                f.write(f"Eval Batch Size: {args.eval_batch_size}\n")
+                f.write(f"LR: {args.lr}\n")
+                f.write(f"LoRA r: {args.lora_r}\n")
+                f.write(f"LoRA alpha: {args.lora_alpha}\n")
+                f.write(f"Reg Lambda: {args.reg_lambda}\n")
+                f.write(f"Random Reset: {args.time_random_reset}\n")
+                f.write(f"Reset Prob: {args.time_reset_prob}\n")
+                f.write(f"Gradient Checkpointing: {args.gradient_checkpointing}\n")
+                f.write("=" * 50 + "\n")
+                for task_name, summary in results.items():
+                    f.write(f"{task_name}: {summary}\n")
 
 
 if __name__ == "__main__":
-    Fire(run_tent_mult)
+    Fire(run_tent_opt)

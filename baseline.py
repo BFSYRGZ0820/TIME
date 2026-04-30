@@ -1,7 +1,6 @@
 import os
 os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
-import json
 import time
 from datetime import datetime
 import torch
@@ -15,7 +14,7 @@ from lm_eval.utils import make_table
 
 def run_baseline(
     model_name="./Qwen1.5-MoE-A2.7B-Chat",
-    task="winogrande,arc_challenge,arc_easy,openbookqa,rte,xquad_zh,xquad_es,boolq",
+    task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es",
     eval_batch_size=8,
     result_path="results/baseline_results.txt",
 ):
@@ -52,7 +51,16 @@ def run_baseline(
         torch_dtype=torch.bfloat16,
         trust_remote_code=True
     )
+    if hasattr(model, "generation_config") and model.generation_config is not None:
+        model.generation_config.do_sample = False
+        model.generation_config.temperature = None
+        model.generation_config.top_p = None
+        model.generation_config.top_k = None
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    if tokenizer.pad_token is None and tokenizer.eos_token is not None:
+        tokenizer.pad_token = tokenizer.eos_token
     
     # 2. 封装为 lm_eval 官方支持的模型对象
     print("\n[2/3] Wrapping model for lm_eval...")
@@ -82,8 +90,12 @@ def run_baseline(
     end_ts = time.time()
     total_seconds = end_ts - start_ts
 
-    peak_allocated_bytes = 0
-    peak_reserved_bytes = 0
+    if torch.cuda.is_available():
+        peak_allocated_bytes = torch.cuda.max_memory_allocated()
+        peak_reserved_bytes = torch.cuda.max_memory_reserved()
+    else:
+        peak_allocated_bytes = 0
+        peak_reserved_bytes = 0
     peak_allocated_gb = peak_allocated_bytes / (1024 ** 3)
     peak_reserved_gb = peak_reserved_bytes / (1024 ** 3)
     
@@ -92,7 +104,7 @@ def run_baseline(
     if result_dir:
         os.makedirs(result_dir, exist_ok=True)
     
-    # 将表格和详细的 JSON 结果写入文件
+    # 仅将摘要信息和最终评测表格写入 txt
     with open(result_path, "w", encoding="utf-8") as f:
         f.write("Baseline Evaluation Results\n")
         f.write("="*50 + "\n")
@@ -107,15 +119,7 @@ def run_baseline(
         f.write(f"Result Path: {result_path}\n")
         f.write("="*50 + "\n")
         f.write(metric_str)
-        f.write("\n\n" + "="*50 + "\nDetailed JSON Output:\n")
-        
-        # 过滤掉无法 JSON 序列化的配置对象
-        import copy
-        res_copy = copy.deepcopy(results)
-        if 'config' in res_copy:
-            res_copy['config'] = str(res_copy['config'])
-            
-        json.dump(res_copy, f, indent=4, ensure_ascii=False, default=str)
+        f.write("\n")
         
     print("\n" + "="*20 + "  Run Summary " + "="*20)
     print(f"End Time:     {end_dt.strftime('%Y-%m-%d %H:%M:%S')}")

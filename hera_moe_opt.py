@@ -229,6 +229,11 @@ def register_probe_hooks(model, layer_idx: int, storage: Dict[str, torch.Tensor]
         storage["pre_router_hidden"] = inputs[0].detach()
 
     def hook(module, inputs, outputs):
+        if isinstance(outputs, tuple):
+            raise RuntimeError(
+                "Current HERA probe hook expects gate logits tensor, but got tuple outputs. "
+                "This model's gate forward needs a model-specific patch."
+            )
         storage["router_logits"] = outputs.detach()
 
     handles = [
@@ -242,12 +247,36 @@ def register_calibration_hook(model, layer_idx: int, bias: torch.Tensor):
     gate_module, _ = find_target_gate_module(model, layer_idx)
 
     def hook(module, inputs, outputs):
-        if outputs.dim() != 2:
-            return outputs
-        batch_size, seq_len = bias.shape[:2]
-        num_experts = bias.shape[-1]
-        logits = outputs.view(batch_size, seq_len, num_experts)
-        return (logits + bias).view(-1, num_experts)
+        if isinstance(outputs, tuple):
+            raise RuntimeError(
+                "HERA calibration hook only supports tensor gate logits. "
+                "Got tuple outputs; please patch this model's gate forward."
+            )
+
+        b = bias
+        if b.dim() == 2:
+            b = b.unsqueeze(1)
+
+        bsz = b.size(0)
+        num_experts = b.size(-1)
+
+        if outputs.dim() == 2:
+            total_tokens = outputs.size(0)
+            if total_tokens % bsz != 0:
+                raise RuntimeError(
+                    f"Gate output shape {tuple(outputs.shape)} cannot match bias {tuple(b.shape)}"
+                )
+            seq_len = total_tokens // bsz
+            logits = outputs.view(bsz, seq_len, num_experts)
+            b = b.to(device=outputs.device, dtype=outputs.dtype)
+            b = b.expand(bsz, seq_len, num_experts)
+            return (logits + b).reshape(-1, num_experts)
+
+        if outputs.dim() == 3:
+            b = b.to(device=outputs.device, dtype=outputs.dtype)
+            return outputs + b.expand_as(outputs)
+
+        raise RuntimeError(f"Unsupported gate output dim: {outputs.dim()}")
 
     return gate_module.register_forward_hook(hook)
 
@@ -287,9 +316,11 @@ def expert_disagreement(route_probs: torch.Tensor) -> torch.Tensor:
 
 
 def prototype_mismatch(sample_repr: torch.Tensor, expert_repr: torch.Tensor) -> torch.Tensor:
-    distances = torch.cdist(sample_repr, expert_repr, p=2)
-    min_dist, _ = distances.min(dim=-1)
-    return min_dist.pow(2)
+    sample_repr = F.normalize(sample_repr.float(), dim=-1)
+    expert_repr = F.normalize(expert_repr.float(), dim=-1)
+    sim = sample_repr @ expert_repr.T
+    max_sim = sim.max(dim=-1).values
+    return 1.0 - max_sim
 
 
 def compute_risk(pred_entropy: torch.Tensor, route_entropy_val: torch.Tensor,
@@ -368,12 +399,12 @@ def anchor_regularization(model, initial_params: Dict[str, torch.Tensor],
         expert_idx = _extract_expert_index(name)
         if expert_idx is not None:
             coeff = weights[min(expert_idx, num_experts - 1)]
-            term = coeff * torch.sum((param - init_val) ** 2)
+            term = coeff * torch.mean((param - init_val) ** 2)
         elif param.dim() > 0 and param.size(0) == num_experts:
             coeff = weights.to(param.device).view(num_experts, *([1] * (param.dim() - 1)))
-            term = torch.sum(coeff * (param - init_val) ** 2)
+            term = torch.mean(coeff * (param - init_val) ** 2)
         else:
-            term = torch.sum((param - init_val) ** 2)
+            term = torch.mean((param - init_val) ** 2)
         reg = term if reg is None else reg + term
     if reg is None:
         return torch.tensor(0.0, device=state_bank.device)
@@ -468,6 +499,7 @@ class Args:
         a_c: Optional[float] = 0.25,
         m_min: Optional[float] = 0.1,
         m_max: Optional[float] = 1.0,
+        max_examples_per_task: Optional[int] = 0,
     ):
         self.task = task
         self.model_name = model_name
@@ -506,6 +538,7 @@ class Args:
         self.a_c = a_c
         self.m_min = m_min
         self.m_max = m_max
+        self.max_examples_per_task = max_examples_per_task
 
 
 def continual_test_time_adaptation_hera(args, model, tokenizer, optimizer, accelerator):
@@ -537,6 +570,8 @@ def continual_test_time_adaptation_hera(args, model, tokenizer, optimizer, accel
         task_dict = get_task_dict([task_name])
         task = task_dict[task_name]
         docs = list(task.validation_docs())
+        if args.max_examples_per_task is not None and args.max_examples_per_task > 0:
+            docs = docs[:args.max_examples_per_task]
         n_examples = len(docs)
 
         pre_acc_list = []
@@ -614,9 +649,15 @@ def continual_test_time_adaptation_hera(args, model, tokenizer, optimizer, accel
             if "pre_router_hidden" not in probe_storage or "router_logits" not in probe_storage:
                 raise RuntimeError("Failed to capture router hidden states/logits for HERA.")
 
-            sample_repr = sample_mean_hidden(probe_storage["pre_router_hidden"], attention_mask)
-            route_probs = mean_route_probs(probe_storage["router_logits"], attention_mask)
-            pred_entropy = per_sample_prediction_entropy(probe_outputs.logits, attention_mask)
+            sample_repr = sample_mean_hidden(
+                probe_storage["pre_router_hidden"], attention_mask
+            ).float()
+            route_probs = mean_route_probs(
+                probe_storage["router_logits"].float(), attention_mask
+            ).float()
+            pred_entropy = per_sample_prediction_entropy(
+                probe_outputs.logits.float(), attention_mask
+            )
             mean_pred_entropy = float(pred_entropy.mean().item())
             route_ent = route_entropy(route_probs)
 
@@ -624,7 +665,6 @@ def continual_test_time_adaptation_hera(args, model, tokenizer, optimizer, accel
                 num_experts = route_probs.size(-1)
                 hidden_dim = sample_repr.size(-1)
                 state_bank = ExpertStateBank(num_experts=num_experts, hidden_dim=hidden_dim, device=accelerator.device)
-            state_bank.ensure_initialized(sample_repr.mean(dim=0))
 
             batch_repr = sample_repr.mean(dim=0)
             delta_t = domain_tracker.update(
@@ -641,9 +681,13 @@ def continual_test_time_adaptation_hera(args, model, tokenizer, optimizer, accel
                 safe_mask = risk < args.tau_low
                 state_bank.warmup_update(sample_repr, route_probs, safe_mask)
                 global_batch_step += 1
+                if global_batch_step == args.warmup_batches:
+                    state_bank.ensure_initialized(sample_repr.mean(dim=0))
                 if accelerator.is_main_process:
                     print(f"[HERA] Warm-up batch {global_batch_step}/{args.warmup_batches}")
                 continue
+
+            state_bank.ensure_initialized(sample_repr.mean(dim=0))
 
             sample_prior = build_sample_prior(
                 sample_repr=sample_repr,
@@ -668,22 +712,25 @@ def continual_test_time_adaptation_hera(args, model, tokenizer, optimizer, accel
             optimizer.zero_grad()
 
             calib_handle = register_calibration_hook(model, args.target_layer, route_bias)
-            outputs = model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                use_cache=False,
-            )
-            calib_handle.remove()
+            try:
+                outputs = model(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    use_cache=False,
+                )
 
-            loss_per_sample = entropy_loss_per_sample(outputs.logits, attention_mask)
-            sample_weights = sample_update_weights(risk, args.tau_low, args.tau_high, args.kappa)
-            weight_sum = sample_weights.sum().clamp_min(1e-12)
-            loss_ent = torch.sum(sample_weights * loss_per_sample) / weight_sum
-            loss_bal = balance_regularization(sample_prior, sample_weights)
-            loss_anc = anchor_regularization(model, trainable_initial, state_bank)
-            loss = loss_ent + args.lambda_bal * loss_bal + args.lambda_anc * loss_anc
+                loss_per_sample = entropy_loss_per_sample(outputs.logits.float(), attention_mask)
+                sample_weights = sample_update_weights(risk, args.tau_low, args.tau_high, args.kappa)
+                weight_sum = sample_weights.sum().clamp_min(1e-12)
+                loss_ent = torch.sum(sample_weights * loss_per_sample) / weight_sum
+                loss_bal = balance_regularization(sample_prior, sample_weights)
+                loss_anc = anchor_regularization(model, trainable_initial, state_bank)
+                loss = loss_ent + args.lambda_anc * loss_anc
 
-            accelerator.backward(loss)
+                accelerator.backward(loss)
+            finally:
+                calib_handle.remove()
+
             apply_expert_gradient_scaling(
                 model=model,
                 state_bank=state_bank,
@@ -776,6 +823,7 @@ def run_hera_opt(
     a_c: Optional[float] = 0.25,
     m_min: Optional[float] = 0.1,
     m_max: Optional[float] = 1.0,
+    max_examples_per_task: Optional[int] = 0,
 ):
     torch.manual_seed(0)
     accelerator = Accelerator()
@@ -818,6 +866,7 @@ def run_hera_opt(
         a_c=a_c,
         m_min=m_min,
         m_max=m_max,
+        max_examples_per_task=max_examples_per_task,
     )
 
     start_dt = datetime.now()
@@ -871,6 +920,7 @@ def run_hera_opt(
         print(f"LoRA (r/a):   {args.lora_r}/{args.lora_alpha}")
         print(f"Target Layer: {args.target_layer}")
         print(f"Warm-up:      {args.warmup_batches}")
+        print(f"Max Examples: {args.max_examples_per_task}")
         print(f"Grad Ckpt:    {args.gradient_checkpointing}")
         print(f"Device:       {accelerator.device}")
         print("==============================================")
@@ -914,6 +964,7 @@ def run_hera_opt(
                 f.write(f"LoRA alpha: {args.lora_alpha}\n")
                 f.write(f"Target Layer: {args.target_layer}\n")
                 f.write(f"Warm-up Batches: {args.warmup_batches}\n")
+                f.write(f"Max Examples Per Task: {args.max_examples_per_task}\n")
                 f.write(f"Gradient Checkpointing: {args.gradient_checkpointing}\n")
                 f.write("=" * 50 + "\n")
                 for task_name, summary in results.items():

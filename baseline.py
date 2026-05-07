@@ -17,6 +17,7 @@ def run_baseline(
     task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es",
     eval_batch_size=8,
     result_path="results/baseline_results.txt",
+    max_examples_per_task=0,
 ):
     """
     运行 Zero-Shot baseline 评测。
@@ -26,6 +27,7 @@ def run_baseline(
       --task         逗号分隔任务列表
       --eval_batch_size 评测 batch size
       --result_path  结果 txt 输出路径
+      --max_examples_per_task 每个 task 使用的样本数，<=0 表示全量
     """
     start_dt = datetime.now()
     start_ts = time.time()
@@ -40,6 +42,7 @@ def run_baseline(
     print(f"Model Path:   {model_name}")
     print(f"Task:         {','.join(task_list)}")
     print(f"Batch Size:   {eval_batch_size}")
+    print(f"Max Examples: {max_examples_per_task}")
     print(f"Result Path:  {result_path}")
     print("=============================================================")
     
@@ -73,13 +76,44 @@ def run_baseline(
     # 3. 启动标准评测引擎 (强制 Zero-shot)
     print(f"\n[3/3] Running evaluation for tasks: {','.join(task_list)}...")
     task_manager = lm_eval.tasks.TaskManager()
-    results = lm_eval.simple_evaluate(
-        model=lm_obj,
-        tasks=task_list,
-        num_fewshot=0,  # 确保是 Zero-shot
-        task_manager=task_manager,
-        batch_size=eval_batch_size
-    )
+    if max_examples_per_task is None or int(max_examples_per_task) <= 0:
+        results = lm_eval.simple_evaluate(
+            model=lm_obj,
+            tasks=task_list,
+            num_fewshot=0,
+            task_manager=task_manager,
+            batch_size=eval_batch_size
+        )
+    else:
+        task_results = {}
+        configs = {}
+        versions = {}
+        n_shot = {}
+        higher_is_better = {}
+
+        for task_name in task_list:
+            print(f"[Baseline] Evaluating task {task_name} with max_examples_per_task={max_examples_per_task}")
+            per_task = lm_eval.simple_evaluate(
+                model=lm_obj,
+                tasks=[task_name],
+                num_fewshot=0,
+                task_manager=task_manager,
+                batch_size=eval_batch_size,
+                limit=int(max_examples_per_task),
+            )
+            task_results.update(per_task.get("results", {}))
+            configs.update(per_task.get("configs", {}))
+            versions.update(per_task.get("versions", {}))
+            n_shot.update(per_task.get("n-shot", {}))
+            higher_is_better.update(per_task.get("higher_is_better", {}))
+
+        results = {
+            "results": task_results,
+            "configs": configs,
+            "versions": versions,
+            "n-shot": n_shot,
+            "higher_is_better": higher_is_better,
+        }
     
     # 4. 打印并保存最终成绩单
     print("\n" + "="*20 + "  Baseline Results " + "="*20)
@@ -116,6 +150,7 @@ def run_baseline(
         f.write(f"Model Path: {model_name}\n")
         f.write(f"Tasks: {','.join(task_list)}\n")
         f.write(f"Eval Batch Size: {eval_batch_size}\n")
+        f.write(f"Max Examples Per Task: {max_examples_per_task}\n")
         f.write(f"Result Path: {result_path}\n")
         f.write("="*50 + "\n")
         f.write(metric_str)

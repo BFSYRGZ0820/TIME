@@ -63,6 +63,7 @@ class Args:
         reg_lambda: Optional[float] = 0.0,
         time_random_reset: Optional[bool] = False,
         time_reset_prob: Optional[float] = 0.01,
+        max_examples_per_task: Optional[int] = 0,
     ):
         self.task = task
         self.model_name = model_name
@@ -78,6 +79,7 @@ class Args:
         self.reg_lambda = reg_lambda
         self.time_random_reset = time_random_reset
         self.time_reset_prob = time_reset_prob
+        self.max_examples_per_task = max_examples_per_task
 
 
 def continual_test_time_adaptation_tent(args, model, tokenizer, device=None):
@@ -118,6 +120,8 @@ def continual_test_time_adaptation_tent(args, model, tokenizer, device=None):
         task_dict = get_task_dict([task_name])
         task = task_dict[task_name]
         docs = list(task.validation_docs())
+        if args.max_examples_per_task is not None and args.max_examples_per_task > 0:
+            docs = docs[:args.max_examples_per_task]
         n_examples = len(docs)
 
         pre_acc_list = []
@@ -238,6 +242,7 @@ def run_tent(
     reg_lambda: Optional[float] = 0.0,
     time_random_reset: Optional[bool] = False,
     time_reset_prob: Optional[float] = 0.01,
+    max_examples_per_task: Optional[int] = 0,
 ):
     torch.manual_seed(0)
 
@@ -252,6 +257,7 @@ def run_tent(
         reg_lambda=reg_lambda,
         time_random_reset=time_random_reset,
         time_reset_prob=time_reset_prob,
+        max_examples_per_task=max_examples_per_task,
     )
 
     start_dt = datetime.now()
@@ -298,6 +304,7 @@ def run_tent(
     print(f"Reg Lambda:   {args.reg_lambda}")
     print(f"Rand Reset:   {args.time_random_reset}")
     print(f"Reset Prob:   {args.time_reset_prob}")
+    print(f"Max Examples: {args.max_examples_per_task}")
     print("=============================================")
 
     start_ts = time.time()
@@ -338,6 +345,7 @@ def run_tent(
             f.write(f"Reg Lambda: {args.reg_lambda}\n")
             f.write(f"Random Reset: {args.time_random_reset}\n")
             f.write(f"Reset Prob: {args.time_reset_prob}\n")
+            f.write(f"Max Examples Per Task: {args.max_examples_per_task}\n")
             f.write("=" * 50 + "\n")
             for task_name, summary in results.items():
                 f.write(f"{task_name}: {summary}\n")

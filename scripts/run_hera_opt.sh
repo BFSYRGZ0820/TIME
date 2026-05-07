@@ -21,7 +21,7 @@ accelerate launch --config_file static/finetune_config.yaml --main_process_port 
   --model_name="./models/Qwen1.5-MoE-A2.7B-Chat" \
   --task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" \
   --eval_batch_size=8 --lora_r=16 --lora_alpha=16 --gradient_checkpointing=True \
-  --lr=1e-5 --target_layer=0 --warmup_batches=10 \
+  --lr=1e-5 --warmup_batches=10 \
   --tau_d=0.2 --tau_i=0.2 --tau_low=0.35 --tau_high=0.65 \
   --lambda_r=2.0 --lambda_bal=0.05 --lambda_anc=1e-4 \
   --lambda_q=1.0 --lambda_c=1.0 \
@@ -29,13 +29,14 @@ accelerate launch --config_file static/finetune_config.yaml --main_process_port 
   --kappa=0.3 --eta_e=0.9 --eta_q=0.95 --eta_c=0.95 \
   --safe_top_b=4 --restoration_rho=0.1 \
   --a_n=0.5 --a_q=0.25 --a_c=0.25 --m_min=0.1 --m_max=1.0 \
+  --max_examples_per_task=0 \
   --result_path="results/hera_results_qwen_chat.txt"
 
 accelerate launch --config_file static/finetune_config.yaml --main_process_port 0 hera_moe_opt.py \
   --model_name="./models/Qwen1.5-MoE-A2.7B" \
   --task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" \
   --eval_batch_size=8 --lora_r=16 --lora_alpha=16 --gradient_checkpointing=True \
-  --lr=1e-5 --target_layer=0 --warmup_batches=10 \
+  --lr=1e-5 --warmup_batches=10 \
   --tau_d=0.2 --tau_i=0.2 --tau_low=0.35 --tau_high=0.65 \
   --lambda_r=2.0 --lambda_bal=0.05 --lambda_anc=1e-4 \
   --lambda_q=1.0 --lambda_c=1.0 \
@@ -43,13 +44,14 @@ accelerate launch --config_file static/finetune_config.yaml --main_process_port 
   --kappa=0.3 --eta_e=0.9 --eta_q=0.95 --eta_c=0.95 \
   --safe_top_b=4 --restoration_rho=0.1 \
   --a_n=0.5 --a_q=0.25 --a_c=0.25 --m_min=0.1 --m_max=1.0 \
+  --max_examples_per_task=0 \
   --result_path="results/hera_results_qwen.txt"
 
 accelerate launch --config_file static/finetune_config.yaml --main_process_port 0 hera_moe_opt.py \
   --model_name="./models/DeepSeek-V2-Lite" \
   --task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es" \
   --eval_batch_size=4 --lora_r=16 --lora_alpha=16 --gradient_checkpointing=True \
-  --lr=1e-5 --target_layer=0 --warmup_batches=10 \
+  --lr=1e-5 --warmup_batches=10 \
   --tau_d=0.2 --tau_i=0.2 --tau_low=0.35 --tau_high=0.65 \
   --lambda_r=2.0 --lambda_bal=0.05 --lambda_anc=1e-4 \
   --lambda_q=1.0 --lambda_c=1.0 \
@@ -57,6 +59,7 @@ accelerate launch --config_file static/finetune_config.yaml --main_process_port 
   --kappa=0.3 --eta_e=0.9 --eta_q=0.95 --eta_c=0.95 \
   --safe_top_b=4 --restoration_rho=0.1 \
   --a_n=0.5 --a_q=0.25 --a_c=0.25 --m_min=0.1 --m_max=1.0 \
+  --max_examples_per_task=0 \
   --result_path="results/hera_results_deepseek.txt"
 
 echo "All HERA experiments completed!"

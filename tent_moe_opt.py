@@ -62,6 +62,7 @@ class Args:
         time_random_reset: Optional[bool] = False,
         time_reset_prob: Optional[float] = 0.01,
         gradient_checkpointing: Optional[bool] = True,
+        max_examples_per_task: Optional[int] = 0,
     ):
         self.task = task
         self.model_name = model_name
@@ -78,6 +79,7 @@ class Args:
         self.time_random_reset = time_random_reset
         self.time_reset_prob = time_reset_prob
         self.gradient_checkpointing = gradient_checkpointing
+        self.max_examples_per_task = max_examples_per_task
 
 
 def continual_test_time_adaptation_tent(args, model, tokenizer, optimizer, accelerator):
@@ -104,6 +106,8 @@ def continual_test_time_adaptation_tent(args, model, tokenizer, optimizer, accel
         task_dict = get_task_dict([task_name])
         task = task_dict[task_name]
         docs = list(task.validation_docs())
+        if args.max_examples_per_task is not None and args.max_examples_per_task > 0:
+            docs = docs[:args.max_examples_per_task]
         n_examples = len(docs)
 
         pre_acc_list = []
@@ -236,6 +240,7 @@ def run_tent_opt(
     time_random_reset: Optional[bool] = False,
     time_reset_prob: Optional[float] = 0.01,
     gradient_checkpointing: Optional[bool] = True,
+    max_examples_per_task: Optional[int] = 0,
 ):
     torch.manual_seed(0)
     accelerator = Accelerator()
@@ -256,6 +261,7 @@ def run_tent_opt(
         time_random_reset=time_random_reset,
         time_reset_prob=time_reset_prob,
         gradient_checkpointing=gradient_checkpointing,
+        max_examples_per_task=max_examples_per_task,
     )
 
     start_dt = datetime.now()
@@ -310,6 +316,7 @@ def run_tent_opt(
         print(f"Reg Lambda:   {args.reg_lambda}")
         print(f"Rand Reset:   {args.time_random_reset}")
         print(f"Reset Prob:   {args.time_reset_prob}")
+        print(f"Max Examples: {args.max_examples_per_task}")
         print(f"Grad Ckpt:    {args.gradient_checkpointing}")
         print(f"Device:       {accelerator.device}")
         print("=================================================")
@@ -354,6 +361,7 @@ def run_tent_opt(
                 f.write(f"Reg Lambda: {args.reg_lambda}\n")
                 f.write(f"Random Reset: {args.time_random_reset}\n")
                 f.write(f"Reset Prob: {args.time_reset_prob}\n")
+                f.write(f"Max Examples Per Task: {args.max_examples_per_task}\n")
                 f.write(f"Gradient Checkpointing: {args.gradient_checkpointing}\n")
                 f.write("=" * 50 + "\n")
                 for task_name, summary in results.items():

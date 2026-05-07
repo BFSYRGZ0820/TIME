@@ -1,278 +1,0 @@
-nohup: ignoring input
-Using CUDA_VISIBLE_DEVICES=0
-[W507 10:16:30.345595288 CUDAAllocatorConfig.h:28] Warning: expandable_segments not supported on this platform (function operator())
-/root/miniconda3/envs/time/lib/python3.10/site-packages/transformers/deepspeed.py:23: FutureWarning: transformers.deepspeed module is deprecated and will be removed in a future version. Please import deepspeed modules directly from transformers.integrations
-  warnings.warn(
-Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
-Loading checkpoint shards:   0%|          | 0/8 [00:00<?, ?it/s]Loading checkpoint shards:  12%|█▎        | 1/8 [00:13<01:36, 13.83s/it]Loading checkpoint shards:  25%|██▌       | 2/8 [00:29<01:30, 15.12s/it]Loading checkpoint shards:  38%|███▊      | 3/8 [00:45<01:16, 15.34s/it]Loading checkpoint shards:  50%|█████     | 4/8 [01:00<01:01, 15.37s/it]Loading checkpoint shards:  62%|██████▎   | 5/8 [01:15<00:45, 15.08s/it]Loading checkpoint shards:  75%|███████▌  | 6/8 [01:31<00:31, 15.51s/it]Loading checkpoint shards:  88%|████████▊ | 7/8 [01:48<00:15, 15.77s/it]Loading checkpoint shards: 100%|██████████| 8/8 [01:48<00:00, 10.99s/it]Loading checkpoint shards: 100%|██████████| 8/8 [01:48<00:00, 13.61s/it]
-[moe_lora] Trainable routed-expert LoRA layers: [0]
-[moe_lora] Trainable parameter tensors after freezing: 360
-Installed CUDA version 12.5 does not match the version torch was compiled with 12.1 but since the APIs are compatible, accepting this combination
-/root/miniconda3/envs/time/lib/python3.10/site-packages/torch/utils/cpp_extension.py:1964: UserWarning: TORCH_CUDA_ARCH_LIST is not set, all archs for visible cards are included for compilation. 
-If this is not desired, please set os.environ['TORCH_CUDA_ARCH_LIST'].
-  warnings.warn(
-========== Starting HERA Evaluation ==========
-Start Time:   2026-05-07 10:16:30
-Model Path:   ./models/Qwen1.5-MoE-A2.7B-Chat
-Task:         ('winogrande', 'arc_challenge', 'arc_easy', 'boolq', 'openbookqa', 'rte', 'xquad_zh', 'xquad_es')
-Batch Size:   8
-LR:           1e-05
-LoRA (r/a):   16/16
-Target Layer: 0
-Warm-up:      10
-Grad Ckpt:    True
-Device:       cuda:0
-==============================================
-
-[HERA] Start task: winogrande
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 36080.03it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:01<00:15,  1.03s/it]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:01,  6.25it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00,  9.39it/s]
-[HERA] Warm-up batch 1/10
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 36196.80it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.44it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.62it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.84it/s]
-[HERA] Warm-up batch 2/10
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 34274.19it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.37it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.37it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.42it/s]
-[HERA] Warm-up batch 3/10
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 34274.19it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.40it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.39it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.48it/s]
-[HERA] Warm-up batch 4/10
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 36002.61it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.42it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.25it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.33it/s]
-[HERA] Warm-up batch 5/10
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 37449.14it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.49it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.55it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.80it/s]
-[HERA] Warm-up batch 6/10
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 32326.04it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.37it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.35it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.39it/s]
-[HERA] Warm-up batch 7/10
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 32140.26it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:11,  1.36it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.20it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.18it/s]
-[HERA] Warm-up batch 8/10
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 33026.02it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.37it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.28it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.30it/s]
-[HERA] Warm-up batch 9/10
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 34239.22it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.39it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.33it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.39it/s]
-[HERA] Warm-up batch 10/10
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 37282.70it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.49it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.58it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.84it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 35658.27it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.46it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.49it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.69it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 37957.50it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.45it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.66it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.90it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 36002.61it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.45it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.55it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.75it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 36551.67it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.46it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.61it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.84it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 31805.15it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:11,  1.32it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:01,  6.95it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 10.80it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 30868.84it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:11,  1.36it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:01,  6.97it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 10.87it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 38524.03it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.49it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.65it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.94it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 34344.35it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.43it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.54it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.72it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 39756.44it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.43it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.55it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.73it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 40573.68it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.48it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.80it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 12.12it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 32993.54it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.39it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.27it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.30it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 36751.84it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.43it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.51it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.68it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 37076.72it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.44it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.38it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.51it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 38086.76it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.44it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.48it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.65it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 33354.31it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.39it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.38it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.46it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 37744.02it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.44it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.41it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.57it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 38836.15it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.41it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.28it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.34it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-W0507 10:25:18.967000 1565353 site-packages/torch/distributed/elastic/agent/server/api.py:704] Received Signals.SIGHUP death signal, shutting down workers
-W0507 10:25:18.968000 1565353 site-packages/torch/distributed/elastic/multiprocessing/api.py:897] Sending process 1566702 closing signal SIGHUP
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 37914.61it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.44it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.44it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.60it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-Using the latest cached version of the dataset since allenai/winogrande couldn't be found on the Hugging Face Hub (offline mode is enabled).
-Found the latest cached dataset configuration 'winogrande_xl' at /root/.cache/huggingface/datasets/allenai___winogrande/winogrande_xl/0.0.0/01e74176c63542e6b0bcb004dcdea22d94fb67b5 (last modified on Wed Apr 22 15:48:27 2026).
-Overwriting default num_fewshot of winogrande from None to 0
-  0%|          | 0/8 [00:00<?, ?it/s]100%|██████████| 8/8 [00:00<00:00, 34030.86it/s]
-Running loglikelihood requests:   0%|          | 0/16 [00:00<?, ?it/s]Running loglikelihood requests:   6%|▋         | 1/16 [00:00<00:10,  1.39it/s]Running loglikelihood requests:  56%|█████▋    | 9/16 [00:01<00:00,  7.36it/s]Running loglikelihood requests: 100%|██████████| 16/16 [00:01<00:00, 11.43it/s]
-`pretrained` model kwarg is not of type `str`. Many other model arguments may be ignored. Please do not launch via accelerate or use `parallelize=True` if passing an existing model this way.
-Passed an already-initialized model through `pretrained`, assuming single-process call to evaluate() or custom distributed integration
-W0507 10:25:48.969000 1565353 site-packages/torch/distributed/elastic/multiprocessing/api.py:916] Unable to shutdown process 1566702 via Signals.SIGHUP, forcefully exiting via Signals.SIGKILL
-Traceback (most recent call last):
-  File "/root/miniconda3/envs/time/bin/accelerate", line 6, in <module>
-    sys.exit(main())
-  File "/root/miniconda3/envs/time/lib/python3.10/site-packages/accelerate/commands/accelerate_cli.py", line 50, in main
-    args.func(args)
-  File "/root/miniconda3/envs/time/lib/python3.10/site-packages/accelerate/commands/launch.py", line 1390, in launch_command
-    deepspeed_launcher(args)
-  File "/root/miniconda3/envs/time/lib/python3.10/site-packages/accelerate/commands/launch.py", line 1076, in deepspeed_launcher
-    distrib_run.run(args)
-  File "/root/miniconda3/envs/time/lib/python3.10/site-packages/torch/distributed/run.py", line 910, in run
-    elastic_launch(
-  File "/root/miniconda3/envs/time/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 138, in __call__
-    return launch_agent(self._config, self._entrypoint, list(args))
-  File "/root/miniconda3/envs/time/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 260, in launch_agent
-    result = agent.run()
-  File "/root/miniconda3/envs/time/lib/python3.10/site-packages/torch/distributed/elastic/metrics/api.py", line 137, in wrapper
-    result = f(*args, **kwargs)
-  File "/root/miniconda3/envs/time/lib/python3.10/site-packages/torch/distributed/elastic/agent/server/api.py", line 696, in run
-    result = self._invoke_run(role)
-  File "/root/miniconda3/envs/time/lib/python3.10/site-packages/torch/distributed/elastic/agent/server/api.py", line 855, in _invoke_run
-    time.sleep(monitor_interval)
-  File "/root/miniconda3/envs/time/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 84, in _terminate_process_handler
-    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
-torch.distributed.elastic.multiprocessing.api.SignalException: Process 1565353 got signal: 1

@@ -71,3 +71,4 @@ nohup bash scripts/run_hera_opt.sh > logs/run_hera_opt.log 2>&1 &
 
 #winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte,xquad_zh,xquad_es
 python routing_eval_analysis.py --model_name="./models/Qwen1.5-MoE-A2.7B-Chat" --task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte" --max_examples_per_task=200 --eval_batch_size=8 --compute_oracle_hit=True
+nohup python routing_eval_analysis.py --model_name="./models/Qwen1.5-MoE-A2.7B-Chat" --task="winogrande,arc_challenge,arc_easy,boolq,openbookqa,rte" --max_examples_per_task=200 --eval_batch_size=8 --compute_oracle_hit=True > logs/routing_eval.log 2>&1 &

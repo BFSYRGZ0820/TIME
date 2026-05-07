@@ -4,6 +4,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 from fire import Fire
@@ -195,6 +198,114 @@ def summarize_batch_metric(values: List[float]) -> Dict[str, float]:
         "std": float(tensor.std(unbiased=False).item()),
         "max": float(tensor.max().item()),
     }
+
+
+def save_line_plot(
+    x_values: List[int],
+    series_dict: Dict[str, List[float]],
+    title: str,
+    ylabel: str,
+    output_path: str,
+):
+    plt.figure(figsize=(10, 5))
+    for label, values in series_dict.items():
+        plt.plot(x_values, values, marker="o", markersize=3, linewidth=1.5, label=label)
+    plt.title(title)
+    plt.xlabel("Post-warmup batch index")
+    plt.ylabel(ylabel)
+    plt.grid(True, linestyle="--", alpha=0.4)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=180)
+    plt.close()
+
+
+def build_time_series_curves(
+    logs: Dict[str, List],
+    batch_boundaries: List[int],
+    num_domains: int,
+    top_k: int,
+    oracle_logs: Optional[Dict[str, List[torch.Tensor]]] = None,
+) -> Dict[str, Dict[str, List[float]]]:
+    if not batch_boundaries:
+        return {}
+
+    domain_ids_all = torch.cat(logs["domain_id"], dim=0)
+    sample_repr_all = torch.cat(logs["sample_repr"], dim=0)
+    risk_all = torch.cat(logs["risk"], dim=0)
+    method_to_key = {
+        "Original Router": "P_ori",
+        "HERA-Proto": "P_proto",
+        "HERA-Proto+Health": "P_proto_health",
+        "HERA-Full": "P_hera",
+    }
+    method_to_tensor = {
+        method_name: torch.cat(logs[key], dim=0)
+        for method_name, key in method_to_key.items()
+    }
+
+    oracle_tensor_map = {}
+    if oracle_logs is not None and oracle_logs.get("hera"):
+        oracle_tensor_map = {
+            "HERA-Proto": torch.cat(oracle_logs["proto"], dim=0),
+            "HERA-Proto+Health": torch.cat(oracle_logs["proto_health"], dim=0),
+            "HERA-Full": torch.cat(oracle_logs["hera"], dim=0),
+            "Original Router": torch.cat(oracle_logs["hera"], dim=0),
+        }
+
+    curves = {
+        "load_cv": {},
+        "mri": {},
+        "domain_purity": {},
+        "sim_consistency": {},
+        "routing_margin": {},
+        "margin_low": {},
+        "margin_mid": {},
+        "margin_high": {},
+    }
+    if oracle_tensor_map:
+        curves["oracle_hit"] = {}
+
+    for method_name, P_all in method_to_tensor.items():
+        curves["load_cv"][method_name] = []
+        curves["mri"][method_name] = []
+        curves["domain_purity"][method_name] = []
+        curves["sim_consistency"][method_name] = []
+        curves["routing_margin"][method_name] = []
+        curves["margin_low"][method_name] = []
+        curves["margin_mid"][method_name] = []
+        curves["margin_high"][method_name] = []
+        if oracle_tensor_map:
+            curves["oracle_hit"][method_name] = []
+
+        for end_idx in batch_boundaries:
+            P = P_all[:end_idx]
+            sample_repr = sample_repr_all[:end_idx]
+            domain_ids = domain_ids_all[:end_idx]
+            risk = risk_all[:end_idx]
+
+            curves["load_cv"][method_name].append(float(load_cv(P, top_k=top_k).item()))
+            curves["mri"][method_name].append(float(mri(P, top_k=top_k).item()))
+            curves["domain_purity"][method_name].append(
+                float(domain_purity(P, domain_ids, num_domains=num_domains, top_k=top_k).item())
+            )
+            curves["sim_consistency"][method_name].append(
+                float(sim_consistency(P, sample_repr, top_k=top_k).item())
+            )
+            curves["routing_margin"][method_name].append(float(routing_margin(P).item()))
+
+            margin_by_risk = routing_margin_by_risk(P, risk)
+            curves["margin_low"][method_name].append(float(margin_by_risk["margin_low"].item()))
+            curves["margin_mid"][method_name].append(float(margin_by_risk["margin_mid"].item()))
+            curves["margin_high"][method_name].append(float(margin_by_risk["margin_high"].item()))
+
+            if oracle_tensor_map:
+                oracle_ids = oracle_tensor_map[method_name][:end_idx]
+                curves["oracle_hit"][method_name].append(
+                    float(oracle_hit(P, oracle_ids, top_k=top_k).item())
+                )
+
+    return curves
 
 
 def make_proto_only_prior(sample_repr: torch.Tensor, expert_repr: torch.Tensor, tau_i: float) -> torch.Tensor:
@@ -424,6 +535,7 @@ def run_routing_eval(
         "proto_health": [],
         "hera": [],
     }
+    batch_boundaries = []
     batch_stats = {
         "ori_load_cv": [],
         "ori_mri": [],
@@ -597,6 +709,7 @@ def run_routing_eval(
             logs["P_hera"].append(P_hera.detach().cpu())
             logs["sample_repr"].append(sample_repr.detach().cpu())
             logs["risk"].append(risk.detach().cpu())
+            batch_boundaries.append(len(logs["task_name"]))
 
             batch_stats["ori_load_cv"].append(float(load_cv(route_probs, args.top_k).item()))
             batch_stats["ori_mri"].append(float(mri(route_probs, args.top_k).item()))
@@ -670,48 +783,45 @@ def run_routing_eval(
         oracle_hera = torch.cat(oracle_logs["hera"], dim=0)
 
     num_domains = len(task_to_domain)
-    metrics = {
-        "Original Router": evaluate_routing_metrics(
-            P=P_ori,
-            sample_repr=sample_repr,
-            domain_ids=domain_ids,
-            num_domains=num_domains,
-            risk=risk,
-            oracle_expert_ids=oracle_hera if args.compute_oracle_hit else None,
-            top_k=args.top_k,
-        ),
-        "HERA-Proto": evaluate_routing_metrics(
-            P=P_proto,
-            sample_repr=sample_repr,
-            domain_ids=domain_ids,
-            num_domains=num_domains,
-            risk=risk,
-            oracle_expert_ids=oracle_proto if args.compute_oracle_hit else None,
-            top_k=args.top_k,
-        ),
-        "HERA-Proto+Health": evaluate_routing_metrics(
-            P=P_proto_health,
-            sample_repr=sample_repr,
-            domain_ids=domain_ids,
-            num_domains=num_domains,
-            risk=risk,
-            oracle_expert_ids=oracle_proto_health if args.compute_oracle_hit else None,
-            top_k=args.top_k,
-        ),
-        "HERA-Full": evaluate_routing_metrics(
-            P=P_hera,
-            sample_repr=sample_repr,
-            domain_ids=domain_ids,
-            num_domains=num_domains,
-            risk=risk,
-            oracle_expert_ids=oracle_hera if args.compute_oracle_hit else None,
-            top_k=args.top_k,
-        ),
-    }
+    curves = build_time_series_curves(
+        logs=logs,
+        batch_boundaries=batch_boundaries,
+        num_domains=num_domains,
+        top_k=args.top_k,
+        oracle_logs=oracle_logs if args.compute_oracle_hit else None,
+    )
 
     stability = {key: summarize_batch_metric(values) for key, values in batch_stats.items()}
     tensor_log_path = os.path.join(args.output_path, "routing_logs.pt")
-    json_path = os.path.join(args.output_path, "routing_metrics.json")
+    json_path = os.path.join(args.output_path, "routing_curves.json")
+    plot_dir = os.path.join(args.output_path, "plots")
+    os.makedirs(plot_dir, exist_ok=True)
+
+    x_values = list(range(1, len(batch_boundaries) + 1))
+    plot_specs = [
+        ("load_cv", "Load CV Over Time", "Load CV", "load_cv_over_time.png"),
+        ("mri", "MRI Over Time", "MRI", "mri_over_time.png"),
+        ("domain_purity", "Domain Purity Over Time", "Domain Purity", "domain_purity_over_time.png"),
+        ("sim_consistency", "Sim-Consistency Over Time", "Sim-Consistency", "sim_consistency_over_time.png"),
+        ("routing_margin", "Routing Margin Over Time", "Routing Margin", "routing_margin_over_time.png"),
+        ("margin_low", "Low-Risk Routing Margin Over Time", "Low-Risk Margin", "margin_low_over_time.png"),
+        ("margin_mid", "Mid-Risk Routing Margin Over Time", "Mid-Risk Margin", "margin_mid_over_time.png"),
+        ("margin_high", "High-Risk Routing Margin Over Time", "High-Risk Margin", "margin_high_over_time.png"),
+    ]
+    if "oracle_hit" in curves:
+        plot_specs.append(("oracle_hit", "Oracle Hit Over Time", "Oracle Hit", "oracle_hit_over_time.png"))
+
+    generated_plots = {}
+    for metric_key, title, ylabel, filename in plot_specs:
+        output_plot_path = os.path.join(plot_dir, filename)
+        save_line_plot(
+            x_values=x_values,
+            series_dict=curves[metric_key],
+            title=title,
+            ylabel=ylabel,
+            output_path=output_plot_path,
+        )
+        generated_plots[metric_key] = output_plot_path
 
     torch.save(
         {
@@ -732,22 +842,23 @@ def run_routing_eval(
         "config": args.__dict__,
         "task_to_domain": task_to_domain,
         "num_logged_samples": int(P_ori.size(0)),
-        "metrics": metrics,
+        "num_logged_batches": len(batch_boundaries),
+        "batch_indices": x_values,
+        "curves": curves,
         "batch_stability": stability,
         "artifacts": {
             "tensor_logs": tensor_log_path,
+            "plots": generated_plots,
         },
     }
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
-    print("\n========== Routing Metrics ==========")
-    for method_name, result in metrics.items():
-        print(f"[{method_name}]")
-        for key, value in result.items():
-            print(f"  {key}: {value:.6f}")
-    print("=====================================")
-    print(f"Metrics JSON: {json_path}")
+    print("\n========== Routing Curves ==========")
+    for metric_key, plot_path in generated_plots.items():
+        print(f"{metric_key}: {plot_path}")
+    print("====================================")
+    print(f"Curves JSON:  {json_path}")
     print(f"Tensor Logs:  {tensor_log_path}")
 
 
